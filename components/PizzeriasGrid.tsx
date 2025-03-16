@@ -82,7 +82,7 @@ export default function PizzeriasGrid({ pizzerias, keyword, city }: PizzeriasGri
       <div className="mt-3">
         <div className="flex items-center mb-2">
           <svg 
-            className="w-5 h-5 text-gray-700 mr-2" 
+            className="w-5 h-5 text-gray-900 mr-2" 
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24" 
@@ -101,7 +101,7 @@ export default function PizzeriasGrid({ pizzerias, keyword, city }: PizzeriasGri
         </div>
         
         {openingHours.weekdayText && openingHours.weekdayText.length > 0 && (
-          <details className="text-sm text-gray-700">
+          <details className="text-sm text-gray-900">
             <summary className="cursor-pointer text-blue-600 hover:text-blue-800 mb-1">
               Ver horarios
             </summary>
@@ -123,7 +123,7 @@ export default function PizzeriasGrid({ pizzerias, keyword, city }: PizzeriasGri
     return (
       <div className="flex items-center mt-3">
         <svg 
-          className="w-5 h-5 text-gray-700 mr-2" 
+          className="w-5 h-5 text-gray-900 mr-2" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24" 
@@ -153,7 +153,7 @@ export default function PizzeriasGrid({ pizzerias, keyword, city }: PizzeriasGri
     return (
       <div className="flex items-center mt-3">
         <svg 
-          className="w-5 h-5 text-gray-700 mr-2" 
+          className="w-5 h-5 text-gray-900 mr-2" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24" 
@@ -207,7 +207,7 @@ export default function PizzeriasGrid({ pizzerias, keyword, city }: PizzeriasGri
             
             <div className="flex items-start mt-4">
               <svg 
-                className="w-5 h-5 text-gray-700 mr-2 mt-0.5" 
+                className="w-5 h-5 text-gray-900 mr-2 mt-0.5" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24" 

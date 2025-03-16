@@ -56,6 +56,42 @@ export default function KeywordCityPaginationClient({ params }: { params: { keyw
         
         // Search for pizzerias using the API route
         console.log('Pagination page - Fetching pizzerias from API...');
+        
+        // For pages > 1, we need to get the pageToken from previous pages
+        let pageToken = null;
+        if (page > 1) {
+          // Fetch tokens sequentially until we reach the desired page
+          for (let i = 1; i < page; i++) {
+            const tokenResponse = await fetch('/api/search', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                keyword: foundKeyword.name,
+                city: foundCity.name,
+                page: i
+              }),
+            });
+            
+            if (!tokenResponse.ok) {
+              throw new Error(`Failed to fetch page token: ${tokenResponse.status} ${tokenResponse.statusText}`);
+            }
+            
+            const tokenResult = await tokenResponse.json();
+            pageToken = tokenResult.nextPageToken;
+            
+            if (!pageToken) {
+              // If there's no next page token, we've reached the end
+              if (i < page - 1) {
+                notFound();
+                return;
+              }
+              break;
+            }
+          }
+        }
+        
         const response = await fetch('/api/search', {
           method: 'POST',
           headers: {
@@ -64,7 +100,8 @@ export default function KeywordCityPaginationClient({ params }: { params: { keyw
           body: JSON.stringify({
             keyword: foundKeyword.name,
             city: foundCity.name,
-            page
+            page,
+            pageToken
           }),
         });
         

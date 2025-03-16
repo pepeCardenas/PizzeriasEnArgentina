@@ -1,5 +1,4 @@
 import { Pizzeria } from '../types';
-import Link from 'next/link';
 
 interface PizzeriasGridProps {
   pizzerias: Pizzeria[];

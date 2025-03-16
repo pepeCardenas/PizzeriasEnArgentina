@@ -3,9 +3,7 @@ const nextConfig = {
   images: {
     domains: ['maps.googleapis.com'],
   },
-  experimental: {
-    serverActions: true,
-  },
+  // Server Actions are available by default now
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Don't resolve 'fs', 'net', 'tls', etc. on the client side

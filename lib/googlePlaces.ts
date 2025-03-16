@@ -12,7 +12,12 @@ import { getCachedData, setCachedData } from './mongodb';
 // Mark this file as server-only
 export const dynamic = 'force-dynamic';
 
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || 'AIzaSyCaAWh5XYg67bao5ZisnpoMP1U1-lamsjg';
+// Get API key from environment variables
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+if (!GOOGLE_API_KEY) {
+  throw new Error('GOOGLE_API_KEY environment variable is not set. Please check your .env.local file.');
+}
+
 const PLACES_API_URL = 'https://places.googleapis.com/v1/places:searchText';
 
 // Function to search for pizzerias

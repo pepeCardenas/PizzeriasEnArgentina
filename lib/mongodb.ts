@@ -7,8 +7,12 @@ if (typeof window !== 'undefined') {
 
 import { MongoClient, ServerApiVersion } from 'mongodb';
 
-// Use environment variable for MongoDB URI with fallback
-const uri = process.env.MONGODB_URI || 'mongodb+srv://jlcardenas:MOjl1000@pizzerias.ul30g.mongodb.net/?retryWrites=true&w=majority&appName=Pizzerias';
+// Use environment variable for MongoDB URI
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  throw new Error('MONGODB_URI environment variable is not set. Please check your .env.local file.');
+}
+
 const options = {
   serverApi: {
     version: ServerApiVersion.v1,

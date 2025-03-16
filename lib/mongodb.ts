@@ -81,9 +81,16 @@ export async function getCachedData(key: string) {
     
     if (!cacheItem) return null;
     
-    // Check if cache is expired (6 months = 15,768,000,000 milliseconds)
-    const SIX_MONTHS = 15768000000;
-    if (Date.now() - cacheItem.timestamp > SIX_MONTHS) {
+    // Check if cache is expired
+    // For pagination data (keys containing page tokens), use a shorter expiration time (1 hour)
+    // For other data, use a longer expiration time (1 day)
+    const ONE_HOUR = 3600000;
+    const ONE_DAY = 86400000;
+    
+    const expirationTime = key.includes('page') ? ONE_HOUR : ONE_DAY;
+    
+    if (Date.now() - cacheItem.timestamp > expirationTime) {
+      console.log(`Cache expired for key: ${key}`);
       await collection.deleteOne({ key });
       return null;
     }

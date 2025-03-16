@@ -27,13 +27,20 @@ export async function searchPizzerias(
   page: number = 1,
   pageToken?: string
 ): Promise<SearchResult> {
-  // Create a cache key
-  const cacheKey = `${keyword}_${city}_${page}_${pageToken || ''}`;
+  // Create a cache key - use only keyword, city and pageToken (not page number)
+  // This ensures that we're caching based on the actual data from Google Places API
+  const cacheKey = `${keyword}_${city}_${pageToken || 'first_page'}`;
   
-  // Check cache first
-  const cachedData = await getCachedData(cacheKey);
-  if (cachedData) {
-    return cachedData as SearchResult;
+  // For debugging
+  console.log(`Cache key: ${cacheKey}`);
+  
+  // Check cache first, but skip cache for non-first pages to ensure fresh data
+  if (page === 1 || !pageToken) {
+    const cachedData = await getCachedData(cacheKey);
+    if (cachedData) {
+      console.log(`Using cached data for ${keyword} in ${city}`);
+      return cachedData as SearchResult;
+    }
   }
   
   // Construct the search query

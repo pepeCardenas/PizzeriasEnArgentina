@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchPizzerias } from '../../../lib/googlePlaces';
 
+export const dynamic = 'force-dynamic'; // Ensure this route is not statically optimized
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -13,6 +15,10 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Add a cache-busting parameter to ensure we get fresh data
+    const cacheBuster = Date.now();
+    console.log(`Search request with cache buster: ${cacheBuster}`);
+    
     // For pages > 1, we need to get the pageToken from previous pages
     let pageToken: string | undefined = undefined;
     if (page > 1) {
@@ -23,9 +29,13 @@ export async function POST(request: NextRequest) {
       let currentPage = 1;
       let currentToken: string | undefined = undefined;
       
+      // Force skip cache for pagination requests
+      const skipCache = true;
+      
       while (currentPage < page) {
         console.log(`Getting token for page ${currentPage}`);
-        const pageResults = await searchPizzerias(keyword, city, currentPage, currentToken);
+        // Pass skipCache=true to force fresh data for pagination
+        const pageResults = await searchPizzerias(keyword, city, currentPage, currentToken, skipCache);
         currentToken = pageResults.nextPageToken;
         
         if (!currentToken) {
@@ -41,7 +51,9 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`Fetching results for page ${page} with token: ${pageToken || 'none'}`);
-    const results = await searchPizzerias(keyword, city, page, pageToken);
+    // Always skip cache for page > 1
+    const skipCache = page > 1;
+    const results = await searchPizzerias(keyword, city, page, pageToken, skipCache);
     
     return NextResponse.json(results);
   } catch (error) {

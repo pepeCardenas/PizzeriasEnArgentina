@@ -47,7 +47,7 @@ export default function Home() {
         <Breadcrumbs items={breadcrumbItems} />
         
         {/* Popular Provinces Section */}
-        <section className="mb-16">
+        <section className="mb-16 text-gray-900">
           <h2 className="text-3xl font-bold mb-8 text-center">
             Provincias Populares
           </h2>
@@ -69,7 +69,7 @@ export default function Home() {
         </section>
         
         {/* Popular Cities Section */}
-        <section className="mb-16">
+        <section className="mb-16 text-gray-900">
           <h2 className="text-3xl font-bold mb-8 text-center">
             Ciudades Principales
           </h2>
@@ -93,7 +93,7 @@ export default function Home() {
         </section>
         
         {/* Popular Pizza Types Section */}
-        <section className="mb-16">
+        <section className="mb-16 text-gray-900">
           <h2 className="text-3xl font-bold mb-8 text-center">
             Tipos de Pizza Populares
           </h2>
@@ -111,7 +111,7 @@ export default function Home() {
         </section>
         
         {/* About Section */}
-        <section className="mb-16 bg-white rounded-lg shadow-md p-8">
+        <section className="mb-16 bg-white rounded-lg shadow-md p-8 text-gray-900">
           <h2 className="text-3xl font-bold mb-6">
             Sobre Pizzerías Argentina
           </h2>
@@ -129,7 +129,7 @@ export default function Home() {
         </section>
         
         {/* Contact Form Section */}
-        <section className="mb-16">
+        <section className="mb-16 text-gray-900">
           <h2 className="text-3xl font-bold mb-8 text-center">
             Contáctanos
           </h2>

@@ -25,22 +25,25 @@ export async function searchPizzerias(
   keyword: string,
   city: string,
   page: number = 1,
-  pageToken?: string
+  pageToken?: string,
+  skipCache: boolean = false
 ): Promise<SearchResult> {
   // Create a cache key - use only keyword, city and pageToken (not page number)
   // This ensures that we're caching based on the actual data from Google Places API
   const cacheKey = `${keyword}_${city}_${pageToken || 'first_page'}`;
   
   // For debugging
-  console.log(`Cache key: ${cacheKey}`);
+  console.log(`Cache key: ${cacheKey}, skipCache: ${skipCache}`);
   
-  // Check cache first, but skip cache for non-first pages to ensure fresh data
-  if (page === 1 || !pageToken) {
+  // Check cache first, unless skipCache is true
+  if (!skipCache) {
     const cachedData = await getCachedData(cacheKey);
     if (cachedData) {
       console.log(`Using cached data for ${keyword} in ${city}`);
       return cachedData as SearchResult;
     }
+  } else {
+    console.log(`Skipping cache for ${keyword} in ${city}`);
   }
   
   // Construct the search query

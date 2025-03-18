@@ -48,6 +48,44 @@ export default function Header() {
     fetchData();
   }, []);
 
+  // Handle city selection change
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const citySlug = e.target.value;
+    setSelectedCity(citySlug);
+    
+    // If both city and keyword are selected, enable auto-navigation
+    if (citySlug && selectedKeyword) {
+      navigateToSearch(citySlug, selectedKeyword);
+    }
+  };
+  
+  // Handle keyword selection change
+  const handleKeywordChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const keywordSlug = e.target.value;
+    setSelectedKeyword(keywordSlug);
+    
+    // If both city and keyword are selected, enable auto-navigation
+    if (selectedCity && keywordSlug) {
+      navigateToSearch(selectedCity, keywordSlug);
+    }
+  };
+  
+  // Navigate to search results
+  const navigateToSearch = (citySlug: string, keywordSlug: string) => {
+    setIsLoading(true);
+    
+    // Find the selected city and keyword objects
+    const city = cities.find(c => c.slug === citySlug);
+    const keyword = keywords.find(k => k.slug === keywordSlug);
+    
+    if (city && keyword) {
+      router.push(`/pizzerias/${keyword.slug}/${city.slug}`);
+    } else {
+      setIsLoading(false);
+    }
+  };
+  
+  // Form submission handler
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -55,17 +93,7 @@ export default function Header() {
       return;
     }
     
-    setIsLoading(true);
-    
-    // Find the selected city and keyword objects
-    const city = cities.find(c => c.slug === selectedCity);
-    const keyword = keywords.find(k => k.slug === selectedKeyword);
-    
-    if (city && keyword) {
-      router.push(`/pizzerias/${keyword.slug}/${city.slug}`);
-    } else {
-      setIsLoading(false);
-    }
+    navigateToSearch(selectedCity, selectedKeyword);
   };
 
   return (
@@ -223,7 +251,7 @@ export default function Header() {
               <div className="flex-1">
                 <select
                   value={selectedKeyword}
-                  onChange={(e) => setSelectedKeyword(e.target.value)}
+                  onChange={handleKeywordChange}
                   className="w-full px-4 py-2 rounded-md text-gray-900 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
                   required
                   disabled={isLoading}
@@ -241,7 +269,7 @@ export default function Header() {
               <div className="flex-1">
                 <select
                   value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
+                  onChange={handleCityChange}
                   className="w-full px-4 py-2 rounded-md text-gray-900 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
                   required
                   disabled={isLoading}

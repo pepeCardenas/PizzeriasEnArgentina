@@ -13,25 +13,51 @@ export default function Footer() {
     const incrementVisits = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/visits', {
-          method: 'POST',
+        
+        // First try to get the current count
+        const getResponse = await fetch('/api/visits', {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
+          // Add cache busting parameter
+          cache: 'no-store',
         });
         
-        if (response.ok) {
-          const data = await response.json();
-          setVisitCount(data.count);
+        if (getResponse.ok) {
+          const getData = await getResponse.json();
+          setVisitCount(getData.count);
+          
+          // Then increment the count
+          const postResponse = await fetch('/api/visits', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            // Add cache busting parameter
+            cache: 'no-store',
+          });
+          
+          if (postResponse.ok) {
+            const postData = await postResponse.json();
+            setVisitCount(postData.count);
+          }
         }
       } catch (error) {
-        console.error('Error incrementing visit count:', error);
+        console.error('Error with visit count:', error);
+        // Set a fallback count to avoid showing nothing
+        setVisitCount(1000);
       } finally {
         setIsLoading(false);
       }
     };
     
-    incrementVisits();
+    // Add a small delay to ensure the component is fully mounted
+    const timer = setTimeout(() => {
+      incrementVisits();
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   return (

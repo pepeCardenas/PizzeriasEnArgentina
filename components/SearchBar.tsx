@@ -61,7 +61,7 @@ export default function SearchBar() {
       return;
     }
     
-    setIsLoading(true);
+    //setIsLoading(true);
     
     // Find the selected city and keyword objects
     const city = cities.find(c => c.slug === selectedCity);

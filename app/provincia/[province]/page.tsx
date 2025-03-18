@@ -62,13 +62,13 @@ export default async function ProvincePage({ params }: { params: { province: str
       <Breadcrumbs items={breadcrumbItems} />
       
       {/* Page Title */}
-      <h1 className="text-3xl md:text-4xl font-bold mb-6">
+      <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900">
         Pizzerías en {province.name}
       </h1>
       
       {/* Page Description */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <p className="text-lg mb-4">
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8 text-gray-800">
+        <p className="text-lg mb-4 ">
           Descubre las mejores pizzerías en {province.name}. Hemos recopilado una lista de ciudades donde podrás encontrar las mejores pizzerías de la provincia.
         </p>
         <p>
@@ -77,8 +77,8 @@ export default async function ProvincePage({ params }: { params: { province: str
       </div>
       
       {/* Cities Section */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">
+      <section className="mb-12 text-gray-900" >
+        <h2 className="text-2xl font-bold mb-6 ">
           Ciudades en {province.name}
         </h2>
         
@@ -104,7 +104,7 @@ export default async function ProvincePage({ params }: { params: { province: str
       </section>
       
       {/* About Province Section */}
-      <section className="mb-12 bg-white rounded-lg shadow-md p-6">
+      <section className="mb-12 bg-white rounded-lg shadow-md p-6 text-gray-900">
         <h2 className="text-2xl font-bold mb-4">
           Sobre {province.name}
         </h2>
@@ -117,7 +117,7 @@ export default async function ProvincePage({ params }: { params: { province: str
       </section>
       
       {/* Other Provinces Section */}
-      <section className="mb-12">
+      <section className="mb-12 text-gray-900" >
         <h2 className="text-2xl font-bold mb-6">
           Otras Provincias
         </h2>

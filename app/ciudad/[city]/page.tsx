@@ -59,12 +59,12 @@ export default async function CityPage({ params }: { params: { city: string } })
       <Breadcrumbs items={breadcrumbItems} />
       
       {/* Page Title */}
-      <h1 className="text-3xl md:text-4xl font-bold mb-6">
+      <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900">
         Pizzerías en {city.name}, {city.province}
       </h1>
       
       {/* Page Description */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8 text-gray-900">
         <p className="text-lg mb-4">
           Descubre las mejores pizzerías en {city.name}, {city.province}. Hemos recopilado una lista de los mejores lugares para disfrutar de pizza en {city.name}.
         </p>
@@ -74,7 +74,7 @@ export default async function CityPage({ params }: { params: { city: string } })
       </div>
       
       {/* Pizza Types Section */}
-      <section className="mb-12">
+      <section className="mb-12 text-gray-900">
         <h2 className="text-2xl font-bold mb-6">
           Tipos de Pizza en {city.name}
         </h2>
@@ -97,7 +97,7 @@ export default async function CityPage({ params }: { params: { city: string } })
       </section>
       
       {/* About City Section */}
-      <section className="mb-12 bg-white rounded-lg shadow-md p-6">
+      <section className="mb-12 bg-white rounded-lg shadow-md p-6 text-gray-900">
         <h2 className="text-2xl font-bold mb-4">
           Sobre {city.name}
         </h2>
@@ -110,7 +110,7 @@ export default async function CityPage({ params }: { params: { city: string } })
       </section>
       
       {/* Other Cities Section */}
-      <section className="mb-12">
+      <section className="mb-12 text-gray-900">
         <h2 className="text-2xl font-bold mb-6">
           Otras Ciudades en {city.province}
         </h2>

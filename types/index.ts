@@ -42,6 +42,17 @@ export interface SearchResult {
   nextPageToken?: string;
 }
 
+export interface PageTokenMap {
+  [page: number]: string | undefined;
+}
+
+export interface CompleteSearchResult {
+  pizzerias: Pizzeria[];
+  totalResults: number;
+  pageTokens: PageTokenMap;
+  maxPages: number;
+}
+
 export interface FormSubmission {
   name: string;
   email: string;

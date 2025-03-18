@@ -155,6 +155,72 @@ export async function clearCacheForKeywordCity(keyword: string, city: string) {
   }
 }
 
+/**
+ * Store complete search results with all page tokens
+ * This allows for efficient pagination without having to make multiple API calls
+ */
+export async function storeCompleteSearchResults(
+  keyword: string, 
+  city: string, 
+  completeResults: import('../types').CompleteSearchResult
+) {
+  try {
+    const collection = await getCollection('pizzerias', 'cache');
+    const key = `complete_${keyword}_${city}`;
+    
+    // Store the complete results
+    await collection.updateOne(
+      { key },
+      { 
+        $set: { 
+          data: completeResults, 
+          timestamp: Date.now(),
+          type: 'complete_search'
+        } 
+      },
+      { upsert: true }
+    );
+    
+    console.log(`Stored complete search results for ${keyword} in ${city} with ${completeResults.totalResults} results and ${completeResults.maxPages} pages`);
+    return true;
+  } catch (error) {
+    console.error('Error storing complete search results:', error);
+    return false;
+  }
+}
+
+/**
+ * Get complete search results for a keyword and city
+ */
+export async function getCompleteSearchResults(keyword: string, city: string) {
+  try {
+    const collection = await getCollection('pizzerias', 'cache');
+    const key = `complete_${keyword}_${city}`;
+    
+    const cacheItem = await collection.findOne({ key });
+    
+    if (!cacheItem) {
+      console.log(`No complete search results found for ${keyword} in ${city}`);
+      return null;
+    }
+    
+    // Check if cache is expired (1 day)
+    const ONE_DAY = 86400000;
+    
+    if (Date.now() - cacheItem.timestamp > ONE_DAY) {
+      console.log(`Complete search results expired for ${keyword} in ${city}`);
+      await collection.deleteOne({ key });
+      return null;
+    }
+    
+    console.log(`Found complete search results for ${keyword} in ${city} with ${cacheItem.data.totalResults} results and ${cacheItem.data.maxPages} pages`);
+    return cacheItem.data as import('../types').CompleteSearchResult;
+  } catch (error) {
+    console.error('Error getting complete search results:', error);
+    return null;
+  }
+}
+
 // Form submission function
 export async function saveFormSubmission(formData: any) {
   if (!clientPromise) {

@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchPizzerias } from '../../../lib/googlePlaces';
-import { clearCacheForKeywordCity } from '../../../lib/mongodb';
+import { 
+  clearCacheForKeywordCity, 
+  getCompleteSearchResults, 
+  storeCompleteSearchResults 
+} from '../../../lib/mongodb';
+import { CompleteSearchResult, PageTokenMap, Pizzeria } from '../../../types';
 
 export const dynamic = 'force-dynamic'; // Ensure this route is not statically optimized
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { keyword, city, page } = body;
+    const { keyword, city, page = 1 } = body;
     
     if (!keyword || !city) {
       return NextResponse.json(
@@ -16,51 +21,107 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Add a cache-busting parameter to ensure we get fresh data
-    const cacheBuster = Date.now();
-    console.log(`Search request with cache buster: ${cacheBuster}`);
+    console.log(`Search request for ${keyword} in ${city}, page ${page}`);
     
-    // For pages > 1, we need to get the pageToken from previous pages
-    let pageToken: string | undefined = undefined;
+    // Check if we already have complete search results for this keyword/city
+    const completeResults = await getCompleteSearchResults(keyword, city);
     
-    // Always force skip cache for any pagination request
-    const forceSkipCache = true;
-    
-    if (page > 1) {
-      console.log(`Fetching page tokens for page ${page} with forced cache skip`);
+    // If we have complete results, return the requested page
+    if (completeResults) {
+      console.log(`Using cached complete results for ${keyword} in ${city}`);
       
-      // We need to get the pageToken for the requested page
-      // This requires fetching page 1 first, then using its nextPageToken for page 2, and so on
-      let currentPage = 1;
-      let currentToken: string | undefined = undefined;
-      
-      // Clear any existing cache for this keyword/city combination
-      console.log(`Clearing cache for ${keyword}_${city}`);
-      await clearCacheForKeywordCity(keyword, city);
-      
-      while (currentPage < page) {
-        console.log(`Getting token for page ${currentPage}`);
-        // Always force fresh data for pagination
-        const pageResults = await searchPizzerias(keyword, city, currentPage, currentToken, forceSkipCache);
-        currentToken = pageResults.nextPageToken;
-        
-        if (!currentToken) {
-          // If there's no next page token, we've reached the end
-          console.log(`No more pages available after page ${currentPage}`);
-          break;
-        }
-        
-        currentPage++;
+      // Check if the requested page exists
+      if (page > completeResults.maxPages) {
+        return NextResponse.json({
+          pizzerias: [],
+          totalResults: completeResults.totalResults,
+          message: `Only ${completeResults.maxPages} pages available`
+        });
       }
       
-      pageToken = currentToken;
+      // Calculate the slice of pizzerias for the requested page
+      const startIndex = (page - 1) * 15;
+      const endIndex = startIndex + 15;
+      const pizzeriasForPage = completeResults.pizzerias.slice(startIndex, endIndex);
+      
+      // Return the results for the requested page
+      return NextResponse.json({
+        pizzerias: pizzeriasForPage,
+        totalResults: completeResults.totalResults,
+        nextPageToken: page < completeResults.maxPages ? completeResults.pageTokens[page] : undefined
+      });
     }
     
-    console.log(`Fetching results for page ${page} with token: ${pageToken || 'none'}`);
-    // Always skip cache for pagination requests
-    const results = await searchPizzerias(keyword, city, page, pageToken, forceSkipCache);
+    // If we don't have complete results, fetch all pages (up to 4)
+    console.log(`No cached complete results found for ${keyword} in ${city}, fetching all pages...`);
     
-    return NextResponse.json(results);
+    // Fetch first page
+    const firstPageResults = await searchPizzerias(keyword, city, 1, undefined, true);
+    
+    // Initialize complete results
+    const allPizzerias: Pizzeria[] = [...firstPageResults.pizzerias];
+    const pageTokens: PageTokenMap = {};
+    let maxPages = 1;
+    
+    // If there's a next page token, store it and fetch more pages
+    if (firstPageResults.nextPageToken) {
+      pageTokens[1] = firstPageResults.nextPageToken;
+      
+      // Fetch up to 3 more pages (for a total of 4)
+      let currentPage = 1;
+      let currentToken = firstPageResults.nextPageToken;
+      
+      while (currentPage < 4 && currentToken) {
+        console.log(`Fetching page ${currentPage + 1} with token: ${currentToken}`);
+        
+        try {
+          const nextPageResults = await searchPizzerias(keyword, city, currentPage + 1, currentToken, true);
+          
+          // Add pizzerias to the complete results
+          allPizzerias.push(...nextPageResults.pizzerias);
+          
+          // If there's a next page token, store it
+          if (nextPageResults.nextPageToken) {
+            pageTokens[currentPage + 1] = nextPageResults.nextPageToken;
+            currentToken = nextPageResults.nextPageToken;
+          } else {
+            // No more pages
+            currentToken = undefined;
+          }
+          
+          // Increment page counter
+          currentPage++;
+          maxPages = currentPage;
+        } catch (error) {
+          console.error(`Error fetching page ${currentPage + 1}:`, error);
+          break;
+        }
+      }
+    }
+    
+    // Calculate total results
+    const totalResults = allPizzerias.length;
+    
+    // Store complete results in cache
+    const completeSearchResults: CompleteSearchResult = {
+      pizzerias: allPizzerias,
+      totalResults,
+      pageTokens,
+      maxPages
+    };
+    
+    await storeCompleteSearchResults(keyword, city, completeSearchResults);
+    
+    // Return the requested page
+    const startIndex = (page - 1) * 15;
+    const endIndex = startIndex + 15;
+    const pizzeriasForPage = allPizzerias.slice(startIndex, endIndex);
+    
+    return NextResponse.json({
+      pizzerias: pizzeriasForPage,
+      totalResults,
+      nextPageToken: pageTokens[page] || undefined
+    });
   } catch (error) {
     console.error('Error searching pizzerias:', error);
     return NextResponse.json(

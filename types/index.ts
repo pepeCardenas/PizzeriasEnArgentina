@@ -39,7 +39,8 @@ export interface Pizzeria {
 export interface SearchResult {
   pizzerias: Pizzeria[];
   totalResults: number;
-  nextPageToken?: string;
+  nextPageToken?: string | undefined;
+  message?: string;
 }
 
 export interface PageTokenMap {

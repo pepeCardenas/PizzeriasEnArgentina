@@ -39,16 +39,18 @@ export async function POST(request: NextRequest) {
         });
       }
       
-      // Calculate the slice of pizzerias for the requested page
-      const startIndex = (page - 1) * 15;
-      const endIndex = startIndex + 15;
+      // Calculate the slice of pizzerias for the requested page (20 results per page)
+      const startIndex = (page - 1) * 20;
+      const endIndex = startIndex + 20;
       const pizzeriasForPage = completeResults.pizzerias.slice(startIndex, endIndex);
       
       // Return the results for the requested page
+      const nextToken = page < completeResults.maxPages ? completeResults.pageTokens[page] : undefined;
+      
       return NextResponse.json({
         pizzerias: pizzeriasForPage,
         totalResults: completeResults.totalResults,
-        nextPageToken: page < completeResults.maxPages ? completeResults.pageTokens[page] : undefined
+        nextPageToken: nextToken
       });
     }
     
@@ -63,40 +65,51 @@ export async function POST(request: NextRequest) {
     const pageTokens: PageTokenMap = {};
     let maxPages = 1;
     
-    // If there's a next page token, store it and fetch more pages
-    if (firstPageResults.nextPageToken) {
-      pageTokens[1] = firstPageResults.nextPageToken;
-      
-      // Fetch up to 3 more pages (for a total of 4)
-      let currentPage = 1;
-      let currentToken = firstPageResults.nextPageToken;
-      
-      while (currentPage < 4 && currentToken) {
-        console.log(`Fetching page ${currentPage + 1} with token: ${currentToken}`);
+    // Store the first page results
+    if (firstPageResults.pizzerias.length > 0) {
+      // If there's a next page token, store it and fetch more pages
+      if (firstPageResults.nextPageToken) {
+        pageTokens[1] = firstPageResults.nextPageToken;
         
-        try {
-          const nextPageResults = await searchPizzerias(keyword, city, currentPage + 1, currentToken, true);
+        // Fetch up to 3 more pages (for a total of 4)
+        let currentPage = 1;
+        let currentToken = firstPageResults.nextPageToken;
+        
+        while (currentPage < 3 && currentToken) {
+          console.log(`Fetching page ${currentPage + 1} with token: ${currentToken}`);
           
-          // Add pizzerias to the complete results
-          allPizzerias.push(...nextPageResults.pizzerias);
-          
-          // If there's a next page token, store it
-          if (nextPageResults.nextPageToken) {
-            pageTokens[currentPage + 1] = nextPageResults.nextPageToken;
-            currentToken = nextPageResults.nextPageToken;
-          } else {
-            // No more pages
-            currentToken = undefined;
+          try {
+            const nextPageResults = await searchPizzerias(keyword, city, currentPage + 1, currentToken, true);
+            
+            // Add pizzerias to the complete results
+            allPizzerias.push(...nextPageResults.pizzerias);
+            
+            // If there's a next page token, store it
+            if (nextPageResults.nextPageToken) {
+              pageTokens[currentPage + 1] = nextPageResults.nextPageToken;
+              currentToken = nextPageResults.nextPageToken;
+            } else {
+              // No more pages
+              currentToken = undefined;
+            }
+            
+            // Increment page counter
+            currentPage++;
+            maxPages = currentPage;
+          } catch (error) {
+            console.error(`Error fetching page ${currentPage + 1}:`, error);
+            break;
           }
-          
-          // Increment page counter
-          currentPage++;
-          maxPages = currentPage;
-        } catch (error) {
-          console.error(`Error fetching page ${currentPage + 1}:`, error);
-          break;
         }
+      } else {
+        // If there's no next page token but we have results, we still have 1 page
+        console.log('No next page token available, only one page of results exists');
+        maxPages = 1;
       }
+    } else {
+      // No results at all
+      console.log('No results found for this search');
+      maxPages = 0;
     }
     
     // Calculate total results
@@ -113,8 +126,8 @@ export async function POST(request: NextRequest) {
     await storeCompleteSearchResults(keyword, city, completeSearchResults);
     
     // Return the requested page
-    const startIndex = (page - 1) * 15;
-    const endIndex = startIndex + 15;
+    const startIndex = (page - 1) * 20;
+    const endIndex = startIndex + 20;
     const pizzeriasForPage = allPizzerias.slice(startIndex, endIndex);
     
     return NextResponse.json({

@@ -82,19 +82,30 @@ export async function getCachedData(key: string) {
     if (!cacheItem) return null;
     
     // Check if cache is expired
-    // For pagination data (keys containing page tokens), use a shorter expiration time (1 hour)
-    // For other data, use a longer expiration time (1 day)
-    const ONE_HOUR = 3600000;
-    const ONE_DAY = 86400000;
+    // Different expiration times based on data type:
+    const FIVE_MINUTES = 300000; // 5 minutes for pagination data
+    const ONE_HOUR = 3600000;    // 1 hour for search results
+    const ONE_DAY = 86400000;    // 1 day for other data
     
-    const expirationTime = key.includes('page') ? ONE_HOUR : ONE_DAY;
+    // Determine expiration time based on key content
+    let expirationTime = ONE_DAY; // Default
+    
+    if (key.includes('first_page')) {
+      // First page results expire after 1 hour
+      expirationTime = ONE_HOUR;
+    } else if (key.includes('page') || key.includes('token')) {
+      // Pagination data (non-first page) expires very quickly
+      expirationTime = FIVE_MINUTES;
+      console.log(`Using short expiration for pagination data: ${key}`);
+    }
     
     if (Date.now() - cacheItem.timestamp > expirationTime) {
-      console.log(`Cache expired for key: ${key}`);
+      console.log(`Cache expired for key: ${key} (age: ${(Date.now() - cacheItem.timestamp) / 1000} seconds)`);
       await collection.deleteOne({ key });
       return null;
     }
     
+    console.log(`Cache hit for key: ${key} (age: ${(Date.now() - cacheItem.timestamp) / 1000} seconds)`);
     return cacheItem.data;
   } catch (error) {
     console.error('Error getting cached data:', error);

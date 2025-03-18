@@ -210,7 +210,7 @@ export default function Header() {
                 className="hover:text-[#F5F6CE] transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Córdoba
+                Cordoba
               </Link>
               <Link 
                 href="/provincia/santa-fe" 

@@ -7,6 +7,9 @@ interface PaginationProps {
 }
 
 export default function Pagination({ currentPage, totalPages, baseUrl }: PaginationProps) {
+  // Ensure totalPages is never more than 3 (maximum 60 results with 20 per page)
+  totalPages = Math.min(totalPages, 3);
+  
   // If there's only one page, don't show pagination
   if (totalPages <= 1) {
     return null;

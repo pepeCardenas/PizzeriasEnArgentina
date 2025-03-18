@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchPizzerias } from '../../../lib/googlePlaces';
+import { clearCacheForKeywordCity } from '../../../lib/mongodb';
 
 export const dynamic = 'force-dynamic'; // Ensure this route is not statically optimized
 
@@ -21,21 +22,26 @@ export async function POST(request: NextRequest) {
     
     // For pages > 1, we need to get the pageToken from previous pages
     let pageToken: string | undefined = undefined;
+    
+    // Always force skip cache for any pagination request
+    const forceSkipCache = true;
+    
     if (page > 1) {
-      console.log(`Fetching page tokens for page ${page}`);
+      console.log(`Fetching page tokens for page ${page} with forced cache skip`);
       
       // We need to get the pageToken for the requested page
       // This requires fetching page 1 first, then using its nextPageToken for page 2, and so on
       let currentPage = 1;
       let currentToken: string | undefined = undefined;
       
-      // Force skip cache for pagination requests
-      const skipCache = true;
+      // Clear any existing cache for this keyword/city combination
+      console.log(`Clearing cache for ${keyword}_${city}`);
+      await clearCacheForKeywordCity(keyword, city);
       
       while (currentPage < page) {
         console.log(`Getting token for page ${currentPage}`);
-        // Pass skipCache=true to force fresh data for pagination
-        const pageResults = await searchPizzerias(keyword, city, currentPage, currentToken, skipCache);
+        // Always force fresh data for pagination
+        const pageResults = await searchPizzerias(keyword, city, currentPage, currentToken, forceSkipCache);
         currentToken = pageResults.nextPageToken;
         
         if (!currentToken) {
@@ -51,9 +57,8 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`Fetching results for page ${page} with token: ${pageToken || 'none'}`);
-    // Always skip cache for page > 1
-    const skipCache = page > 1;
-    const results = await searchPizzerias(keyword, city, page, pageToken, skipCache);
+    // Always skip cache for pagination requests
+    const results = await searchPizzerias(keyword, city, page, pageToken, forceSkipCache);
     
     return NextResponse.json(results);
   } catch (error) {

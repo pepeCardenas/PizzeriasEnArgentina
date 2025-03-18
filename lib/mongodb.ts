@@ -131,6 +131,30 @@ export async function setCachedData(key: string, data: any) {
   }
 }
 
+/**
+ * Clear cache entries for a specific keyword and city combination
+ * This is useful for pagination to ensure fresh data
+ */
+export async function clearCacheForKeywordCity(keyword: string, city: string) {
+  try {
+    const collection = await getCollection('pizzerias', 'cache');
+    
+    // Create a regex pattern to match all cache keys for this keyword/city combination
+    const keyPattern = new RegExp(`^${keyword}_${city}`);
+    
+    // Find and delete all matching cache entries
+    const result = await collection.deleteMany({ 
+      key: { $regex: keyPattern } 
+    });
+    
+    console.log(`Cleared ${result.deletedCount} cache entries for ${keyword} in ${city}`);
+    return result.deletedCount;
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    return 0;
+  }
+}
+
 // Form submission function
 export async function saveFormSubmission(formData: any) {
   if (!clientPromise) {

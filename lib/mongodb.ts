@@ -15,8 +15,17 @@ const uri = process.env.MONGODB_URI;
 
 // During build time, we might not have access to environment variables
 // So we need to handle this case gracefully
-if (!uri && process.env.NODE_ENV !== 'production' && process.env.NEXT_PHASE !== 'phase-production-build') {
-  console.warn('MONGODB_URI environment variable is not set. Please check your .env.local file.');
+if (!uri) {
+  // Only warn in development mode
+  if (process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV !== 'production' && process.env.NEXT_PHASE !== 'phase-production-build') {
+    console.warn('MONGODB_URI environment variable is not set. Please check your .env.local file.');
+  } else {
+    // In production, log more details
+    console.error('MONGODB_URI environment variable is not set in production!');
+    console.error('Environment:', process.env.NODE_ENV);
+    console.error('Vercel environment:', process.env.VERCEL_ENV);
+    console.error('Available environment variables:', Object.keys(process.env).filter(key => !key.includes('SECRET')));
+  }
 }
 
 const options = {
@@ -33,28 +42,43 @@ let clientPromise: Promise<MongoClient> | undefined = undefined;
 
 // Only create a client if we have a URI
 if (uri) {
-  if (process.env.NODE_ENV === 'development') {
-    // In development mode, use a global variable so that the value
-    // is preserved across module reloads caused by HMR (Hot Module Replacement).
-    let globalWithMongo = global as typeof globalThis & {
-      _mongoClientPromise?: Promise<MongoClient>;
-    };
+  try {
+    if (process.env.NODE_ENV === 'development') {
+      // In development mode, use a global variable so that the value
+      // is preserved across module reloads caused by HMR (Hot Module Replacement).
+      let globalWithMongo = global as typeof globalThis & {
+        _mongoClientPromise?: Promise<MongoClient>;
+      };
 
-    if (!globalWithMongo._mongoClientPromise) {
+      if (!globalWithMongo._mongoClientPromise) {
+        client = new MongoClient(uri, options);
+        globalWithMongo._mongoClientPromise = client.connect().catch(err => {
+          console.error('Failed to connect to MongoDB:', err);
+          throw err;
+        });
+      }
+      clientPromise = globalWithMongo._mongoClientPromise;
+    } else {
+      // In production mode, it's best to not use a global variable.
+      console.log('Initializing MongoDB client in production mode');
+      console.log('Environment:', process.env.NODE_ENV);
+      console.log('Vercel environment:', process.env.VERCEL_ENV);
+      
       client = new MongoClient(uri, options);
-      globalWithMongo._mongoClientPromise = client.connect().catch(err => {
-        console.error('Failed to connect to MongoDB:', err);
+      clientPromise = client.connect().catch(err => {
+        console.error('Failed to connect to MongoDB in production:', err);
+        // Log more details about the error
+        if (err instanceof Error) {
+          console.error('Error name:', err.name);
+          console.error('Error message:', err.message);
+          console.error('Error stack:', err.stack);
+        }
         throw err;
       });
     }
-    clientPromise = globalWithMongo._mongoClientPromise;
-  } else {
-    // In production mode, it's best to not use a global variable.
-    client = new MongoClient(uri, options);
-    clientPromise = client.connect().catch(err => {
-      console.error('Failed to connect to MongoDB:', err);
-      throw err;
-    });
+  } catch (error) {
+    console.error('Error initializing MongoDB client:', error);
+    // Don't throw here, let the application continue without MongoDB
   }
 }
 
@@ -68,7 +92,7 @@ export async function getCollection(dbName: string, collectionName: string) {
     console.error('MongoDB client not initialized. MONGODB_URI environment variable may not be set.');
     
     // In production, log more details about the environment
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
       console.error('Environment variables available:', Object.keys(process.env).filter(key => !key.includes('SECRET')));
       console.error('MONGODB_URI defined:', !!process.env.MONGODB_URI);
       if (process.env.MONGODB_URI) {

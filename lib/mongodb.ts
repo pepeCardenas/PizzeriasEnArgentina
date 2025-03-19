@@ -65,12 +65,48 @@ export default clientPromise;
 // Helper function to get a collection
 export async function getCollection(dbName: string, collectionName: string) {
   if (!clientPromise) {
-    throw new Error('MongoDB client not initialized. Check your MONGODB_URI environment variable.');
+    console.error('MongoDB client not initialized. MONGODB_URI environment variable may not be set.');
+    
+    // In production, log more details about the environment
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Environment variables available:', Object.keys(process.env).filter(key => !key.includes('SECRET')));
+      console.error('MONGODB_URI defined:', !!process.env.MONGODB_URI);
+      if (process.env.MONGODB_URI) {
+        // Log a sanitized version of the URI (hide username/password)
+        const sanitizedUri = process.env.MONGODB_URI.replace(
+          /(mongodb(\+srv)?:\/\/)([^:]+):([^@]+)@/,
+          '$1***:***@'
+        );
+        console.error('MONGODB_URI format:', sanitizedUri);
+      }
+    }
+    
+    // Return a dummy collection that will fail gracefully
+    return {
+      findOne: async () => null,
+      updateOne: async () => ({ acknowledged: false }),
+      deleteOne: async () => ({ acknowledged: false }),
+      deleteMany: async () => ({ acknowledged: false, deletedCount: 0 }),
+      insertOne: async () => ({ acknowledged: false })
+    } as any;
   }
   
-  const client = await clientPromise;
-  const db = client.db(dbName);
-  return db.collection(collectionName);
+  try {
+    const client = await clientPromise;
+    const db = client.db(dbName);
+    return db.collection(collectionName);
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error);
+    
+    // Return a dummy collection that will fail gracefully
+    return {
+      findOne: async () => null,
+      updateOne: async () => ({ acknowledged: false }),
+      deleteOne: async () => ({ acknowledged: false }),
+      deleteMany: async () => ({ acknowledged: false, deletedCount: 0 }),
+      insertOne: async () => ({ acknowledged: false })
+    } as any;
+  }
 }
 
 // Cache management functions

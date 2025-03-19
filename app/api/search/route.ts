@@ -35,35 +35,48 @@ export async function POST(request: NextRequest) {
       
       console.log(`Search request for ${keyword} in ${city}, page ${page}`);
       
-      // Check if we already have complete search results for this keyword/city
-      const completeResults = await getCompleteSearchResults(keyword, city);
+      // Try to clear the cache for this keyword/city combination
+      try {
+        await clearCacheForKeywordCity(keyword, city);
+      } catch (error) {
+        console.error('Error clearing cache:', error);
+        // Continue even if clearing cache fails
+      }
       
-      // If we have complete results, return the requested page
-      if (completeResults) {
-        console.log(`Using cached complete results for ${keyword} in ${city}`);
+      try {
+        // Check if we already have complete search results for this keyword/city
+        const completeResults = await getCompleteSearchResults(keyword, city);
         
-        // Check if the requested page exists
-        if (page > completeResults.maxPages) {
+        // If we have complete results, return the requested page
+        if (completeResults) {
+          console.log(`Using cached complete results for ${keyword} in ${city}`);
+          
+          // Check if the requested page exists
+          if (page > completeResults.maxPages) {
+            return NextResponse.json({
+              pizzerias: [],
+              totalResults: completeResults.totalResults,
+              message: `Only ${completeResults.maxPages} pages available`
+            });
+          }
+          
+          // Calculate the slice of pizzerias for the requested page (20 results per page)
+          const startIndex = (page - 1) * 20;
+          const endIndex = startIndex + 20;
+          const pizzeriasForPage = completeResults.pizzerias.slice(startIndex, endIndex);
+          
+          // Check if the next page token exists
+          const hasNextPageToken = page < completeResults.maxPages && page in completeResults.pageTokens;
+          
           return NextResponse.json({
-            pizzerias: [],
+            pizzerias: pizzeriasForPage,
             totalResults: completeResults.totalResults,
-            message: `Only ${completeResults.maxPages} pages available`
+            nextPageToken: hasNextPageToken ? completeResults.pageTokens[page] : ""
           });
         }
-        
-        // Calculate the slice of pizzerias for the requested page (20 results per page)
-        const startIndex = (page - 1) * 20;
-        const endIndex = startIndex + 20;
-        const pizzeriasForPage = completeResults.pizzerias.slice(startIndex, endIndex);
-        
-        // Check if the next page token exists
-        const hasNextPageToken = page < completeResults.maxPages && page in completeResults.pageTokens;
-        
-        return NextResponse.json({
-          pizzerias: pizzeriasForPage,
-          totalResults: completeResults.totalResults,
-          nextPageToken: hasNextPageToken ? completeResults.pageTokens[page] : ""
-        });
+      } catch (error) {
+        console.error('Error retrieving cached results:', error);
+        // Continue with fetching from Google Places API
       }
       
       // If we don't have complete results, fetch all pages (up to 3)
@@ -135,7 +148,12 @@ export async function POST(request: NextRequest) {
         maxPages
       };
       
-      await storeCompleteSearchResults(keyword, city, completeSearchResults);
+      try {
+        await storeCompleteSearchResults(keyword, city, completeSearchResults);
+      } catch (error) {
+        console.error('Error storing complete search results:', error);
+        // Continue even if storing fails
+      }
       
       // Return the requested page
       const startIndex = (page - 1) * 20;

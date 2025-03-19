@@ -94,13 +94,36 @@ export default function KeywordCityPaginationClient({ params }: { params: { keyw
         const items = generateKeywordCityBreadcrumbs(foundKeyword, foundCity);
         setBreadcrumbItems(items);
         
-        // Calculate total pages
-        const resultsPerPage = 15;
-        const pages = Math.ceil(results.totalResults / resultsPerPage) || 1;
-        setTotalPages(pages);
+        // Calculate total pages based on total results and results per page
+        // If there's a nextPageToken, there's at least one more page
+        const hasNextPage = !!results.nextPageToken;
+        
+        // Calculate total pages based on total results (20 per page)
+        let totalPages = Math.ceil(results.totalResults / 20);
+        
+        // If we're on page 1 and there's a next page token, ensure at least 2 pages
+        if (page === 1 && hasNextPage) {
+          totalPages = Math.max(totalPages, 2);
+        }
+        
+        // If we're on page > 1, ensure at least current page
+        if (page > 1) {
+          totalPages = Math.max(totalPages, page);
+        }
+        
+        // If there's no next page and we're not on page 1, use current page
+        if (!hasNextPage && page > 1) {
+          totalPages = page;
+        }
+        
+        // Maximum 3 pages (60 results total)
+        totalPages = Math.min(totalPages, 3);
+        
+        console.log(`Setting total pages to ${totalPages} (current page: ${page}, hasNextPage: ${hasNextPage})`);
+        setTotalPages(totalPages);
         
         // If page is greater than total pages, return 404
-        if (page > pages) {
+        if (page > totalPages) {
           console.error('Pagination page - Page number exceeds total pages');
           notFound();
           return;
@@ -161,7 +184,7 @@ export default function KeywordCityPaginationClient({ params }: { params: { keyw
       {/* Results */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold mb-6">
-          Resultados {(pageNumber - 1) * 15 + 1}-{Math.min(pageNumber * 15, searchResults.totalResults)} de {searchResults.totalResults}
+          Resultados {(pageNumber - 1) * 20 + 1}-{Math.min(pageNumber * 20, searchResults.totalResults)} de {searchResults.totalResults}
         </h2>
         
         {searchResults.pizzerias.length > 0 ? (

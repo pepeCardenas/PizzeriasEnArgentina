@@ -50,22 +50,31 @@ export async function searchPizzerias(
   const searchQuery = `Pizzerias de ${keyword} en ${city}`;
   
   try {
+    console.log(`Making API request to ${PLACES_API_URL} with pageToken: ${pageToken || 'none'}`);
+    
     const response = await axios.post(
       PLACES_API_URL,
       {
         textQuery: searchQuery,
         languageCode: 'es',
-        pageSize: 15,
+        pageSize: 20, // Maximum allowed by the API
         pageToken: pageToken || undefined
       },
       {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': GOOGLE_API_KEY,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.types,places.internationalPhoneNumber,places.currentOpeningHours,places.googleMapsUri,places.websiteUri',
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.types,places.internationalPhoneNumber,places.currentOpeningHours,places.googleMapsUri,places.websiteUri,nextPageToken',
         }
       }
     );
+    
+    // Log the raw response to check if nextPageToken is present
+    console.log('Raw API response:', JSON.stringify({
+      places: response.data.places ? response.data.places.length : 0,
+      nextPageToken: response.data.nextPageToken,
+      hasNextPage: !!response.data.nextPageToken
+    }));
     
     // Transform the response
     const pizzerias: Pizzeria[] = response.data.places.map((place: any) => ({
@@ -85,11 +94,31 @@ export async function searchPizzerias(
       googleMapsUrl: place.googleMapsUri
     }));
     
+    // Calculate total results
+    // For the first page, we can estimate based on the number of results and whether there's a next page
+    // For subsequent pages, we need to add to the previous count
+    let totalResults = pizzerias.length;
+    
+    // If this is page 1 and there's a next page, estimate total as at least 2 pages worth
+    if (page === 1 && response.data.nextPageToken) {
+      totalResults = Math.max(totalResults, 40); // At least 2 pages (20 results per page)
+    }
+    
+    // If this is not page 1, we're showing results starting from (page-1)*20+1
+    if (page > 1) {
+      totalResults = (page - 1) * 20 + pizzerias.length;
+    }
+    
+    // Maximum total results is 60 (3 pages of 20 results)
+    totalResults = Math.min(totalResults, 60);
+    
     const result: SearchResult = {
       pizzerias,
-      totalResults: pizzerias.length,
+      totalResults,
       nextPageToken: response.data.nextPageToken
     };
+    
+    console.log(`Page ${page} results: ${pizzerias.length} pizzerias, totalResults: ${totalResults}, hasNextPage: ${!!response.data.nextPageToken}`);
     
     // Cache the result
     await setCachedData(cacheKey, result);

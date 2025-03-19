@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
               currentToken = nextPageResults.nextPageToken;
             } else {
               // No more pages
-              currentToken = undefined;
+              currentToken = "";
             }
             
             // Increment page counter

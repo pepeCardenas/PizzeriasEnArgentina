@@ -39,12 +39,12 @@ export interface Pizzeria {
 export interface SearchResult {
   pizzerias: Pizzeria[];
   totalResults: number;
-  nextPageToken?: string | undefined;
+  nextPageToken: string;
   message?: string;
 }
 
 export interface PageTokenMap {
-  [page: number]: string | undefined;
+  [page: number]: string;
 }
 
 export interface CompleteSearchResult {

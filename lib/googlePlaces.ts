@@ -115,7 +115,7 @@ export async function searchPizzerias(
     const result: SearchResult = {
       pizzerias,
       totalResults,
-      nextPageToken: response.data.nextPageToken
+      nextPageToken: response.data.nextPageToken || ""
     };
     
     console.log(`Page ${page} results: ${pizzerias.length} pizzerias, totalResults: ${totalResults}, hasNextPage: ${!!response.data.nextPageToken}`);
@@ -126,6 +126,6 @@ export async function searchPizzerias(
     return result;
   } catch (error) {
     console.error('Error searching pizzerias:', error);
-    return { pizzerias: [], totalResults: 0 };
+    return { pizzerias: [], totalResults: 0, nextPageToken: "" };
   }
 }
